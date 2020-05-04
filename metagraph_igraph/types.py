@@ -3,6 +3,7 @@ from metagraph.types import Graph, DTYPE_CHOICES, WEIGHT_CHOICES
 import igraph
 import math
 import operator
+from functools import partial
 
 
 class IGraph(Wrapper, abstract=Graph):
@@ -114,40 +115,44 @@ class IGraph(Wrapper, abstract=Graph):
             raise TypeError(f"object not of type {cls.__name__}")
 
     @classmethod
-    def compare_objects(cls, obj1, obj2):
-        if type(obj1) is not cls.value_type or type(obj2) is not cls.value_type:
-            raise TypeError("objects must be IGraph")
+    def assert_equal(cls, obj1, obj2, *, rel_tol=1e-9, abs_tol=0.0, check_values=True):
+        assert (
+                type(obj1) is cls.value_type
+        ), f"obj1 must be IGraph, not {type(obj1)}"
+        assert (
+                type(obj2) is cls.value_type
+        ), f"obj2 must be IGraph, not {type(obj2)}"
 
-        if obj1._dtype != obj2._dtype or obj1._weights != obj2._weights:
-            return False
+        if check_values:
+            assert obj1._dtype == obj2._dtype, f"{obj1._dtype} != {obj2._dtype}"
+            assert obj1._weights == obj2._weights, f"{obj1._weights} != {obj2._weights}"
         g1 = obj1.value
         g2 = obj2.value
-        if g1.is_directed() != g2.is_directed():
-            return False
-        if g1.vcount() != g2.vcount():
-            return False
-        if g1.ecount() != g2.ecount():
-            return False
+        assert g1.is_directed() == g2.is_directed(), f"{g1.is_directed()} != {g2.is_directed()}"
+        assert g1.vcount() == g2.vcount(), f"{g1.vcount()} != {g2.vcount()}"
+        assert g1.ecount() == g2.ecount(), f"{g1.ecount()} != {g2.ecount()}"
         # Convert to a common node indexing scheme
-        try:
-            obj2 = obj2.rebuild_for_node_index(obj1.node_index)
-            g2 = obj2.value
-        except ValueError:
-            return False
+        obj2 = obj2.rebuild_for_node_index(obj1.node_index)
+        g2 = obj2.value
         # Compare
-        is_weighted = obj1._weights != "unweighted"
-        if obj1._dtype == "float":
-            comp = math.isclose
+        if check_values and obj1._weights != "unweighted":
+            if obj1._dtype == "float":
+                comp = partial(math.isclose, rel_tol=rel_tol, abs_tol=abs_tol)
+                compstr = "close to"
+            else:
+                comp = operator.eq
+                compstr = "equal to"
+            for e1 in g1.es:
+                try:
+                    e2 = g2.es[g2.get_eid(*e1.tuple)]
+                except igraph.InternalError:
+                    raise AssertionError(f'Mismatched edge: {e1.tuple}')
+                w1 = e1["weight"]
+                w2 = e2["weight"]
+                assert comp(w1, w2), f"{w1} not {compstr} {w2}"
         else:
-            comp = operator.eq
-        for e1 in g1.es:
-            try:
-                e2 = g2.es[g2.get_eid(*e1.tuple)]
-            except igraph.InternalError:
-                return False
-            if e1.source != e2.source or e1.target != e2.target:
-                return False
-            if is_weighted:
-                if not comp(e1["weight"], e2["weight"]):
-                    return False
-        return True
+            for e1 in g1.es:
+                try:
+                    g2.es[g2.get_eid(*e1.tuple)]
+                except igraph.InternalError:
+                    raise AssertionError(f'Mismatched edge: {e1.tuple}')
