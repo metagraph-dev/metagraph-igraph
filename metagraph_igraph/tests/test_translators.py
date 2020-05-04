@@ -28,7 +28,7 @@ def test_graphblas_2_igraph(default_plugin_resolver):
                      edge_attrs={"weight": [1, 2, 0, 3, 3]})
     intermediate = IGraph(g, node_index=nidx)
     y = dpr.translate(x, IGraph)
-    assert IGraph.Type.compare_objects(y, intermediate)
+    IGraph.Type.assert_equal(y, intermediate)
     # Convert graphblas <- igraph
     x2 = dpr.translate(y, GrblasAdjacencyMatrix)
-    assert GrblasAdjacencyMatrix.Type.compare_objects(x, x2)
+    GrblasAdjacencyMatrix.Type.assert_equal(x, x2)
