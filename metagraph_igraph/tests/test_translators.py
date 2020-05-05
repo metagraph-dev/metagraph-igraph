@@ -2,6 +2,7 @@ import pytest
 import metagraph as mg
 from metagraph import IndexedNodes
 from metagraph.plugins import has_grblas
+from metagraph.tests.util import default_plugin_resolver
 import igraph
 from ..types import IGraph
 
