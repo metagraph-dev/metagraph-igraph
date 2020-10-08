@@ -6,36 +6,59 @@ import igraph
 
 if has_grblas:
     import grblas
-    from metagraph.plugins.graphblas.types import GrblasAdjacencyMatrix
+    from metagraph.plugins.graphblas.types import GrblasGraph, GrblasEdgeMap, GrblasEdgeSet, GrblasNodeMap
 
     @translator
-    def graph_from_graphblas(x: GrblasAdjacencyMatrix, **props) -> IGraph:
-        graph = igraph.Graph(x.num_nodes, directed=x._is_directed)
-        if x._weights == "unweighted":
-            row_index, col_index, _ = x.value.to_values()
-            for ridx, cidx in zip(row_index, col_index):
-                graph.add_edge(ridx, cidx)
-        else:
-            row_index, col_index, weights = x.value.to_values()
-            for ridx, cidx, wgt in zip(row_index, col_index, weights):
-                graph.add_edge(ridx, cidx, weight=wgt)
-        return IGraph(graph, weights=x._weights, dtype=x._dtype, node_index=x.node_index)
+    def graph_from_graphblas(x: GrblasGraph, **props) -> IGraph:
+        xprops = GrblasGraph.Type.compute_abstract_properties(x, ["is_directed", "node_type", "node_dtype",
+                                                                  "edge_type", "edge_dtype"])
+
+        graph = igraph.Graph(x.edges.value.nrows, directed=xprops["is_directed"])
+        rows, cols, weights = x.edges.value.to_values()
+        graph.add_edges(zip(rows, cols))
+        if xprops["node_type"] == "map":
+            # Assumes that idx is sorted
+            idx, vals = x.nodes.value.to_values()
+            graph.vs["weight"] = vals
+        if xprops["edge_type"] == "map":
+            graph.es["weight"] = weights
+        if not xprops["is_directed"]:
+            graph.simplify(multiple=True, loops=True, combine_edges="first")
+        ret = IGraph(graph)
+
+        info = IGraph.Type.get_typeinfo(ret)
+        info.known_abstract_props.update(xprops)
+
+        return ret
 
     @translator
-    def graph_to_graphblas(x: IGraph, **props) -> GrblasAdjacencyMatrix:
-        dtype = {
+    def graph_to_graphblas(x: IGraph, **props) -> GrblasGraph:
+        xprops = IGraph.Type.compute_abstract_properties(x, ["is_directed", "node_type", "node_dtype",
+                                                             "edge_type", "edge_dtype"])
+
+        nn = x.value.vcount()
+        dmap = {
             "bool": grblas.dtypes.BOOL,
             "int": grblas.dtypes.INT64,
             "float": grblas.dtypes.FP64,
-        }[x._dtype]
-        rows, cols = [], []
-        for edge in x.value.es:
-            rows.append(edge.source)
-            cols.append(edge.target)
-        if x.value.is_weighted():
-            vals = x.value.es["weight"]
+        }
+        rows, cols = list(zip(*x.value.get_edgelist()))
+        if xprops["edge_type"] == "map":
+            vals = x.value.es[x.edge_weight_label]
+            eclass = GrblasEdgeMap
         else:
             vals = [1]*len(rows)
-        m = grblas.Matrix.new(dtype, nrows=x.num_nodes, ncols=x.num_nodes)
-        m.build(rows, cols, vals)
-        return GrblasAdjacencyMatrix(m, is_directed=x.value.is_directed(), node_index=x.node_index)
+            eclass = GrblasEdgeSet
+        m = grblas.Matrix.from_values(rows, cols, vals, nrows=nn, ncols=nn, dtype=dmap[xprops["edge_dtype"]])
+        edges = eclass(m)
+        if xprops["node_type"] == "map":
+            v = grblas.Vector.from_values(range(nn), x.value.vs[x.node_weight_label])
+            nodes = GrblasNodeMap(v)
+        else:
+            nodes = None
+        ret = GrblasGraph(edges, nodes)
+
+        info = GrblasGraph.Type.get_typeinfo(ret)
+        info.known_abstract_props.update(xprops)
+
+        return ret

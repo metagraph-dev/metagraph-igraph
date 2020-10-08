@@ -1,5 +1,5 @@
 from metagraph import concrete_algorithm
-from metagraph.plugins.numpy.types import NumpyNodes
+from metagraph.plugins.numpy.types import NumpyNodeMap
 from ..types import IGraph
 import igraph
 import numpy as np
@@ -11,12 +11,12 @@ def igraph_triangle_count(graph: IGraph) -> int:
 
 
 @concrete_algorithm("clustering.connected_components")
-def igraph_connected_components(graph: IGraph) -> NumpyNodes:
+def igraph_connected_components(graph: IGraph) -> NumpyNodeMap:
     cc = graph.value.components(igraph.WEAK).membership
-    return NumpyNodes(np.array(cc), node_index=graph._node_index)
+    return NumpyNodeMap(np.array(cc))
 
 
 @concrete_algorithm("clustering.strongly_connected_components")
-def igraph_strongly_connected_components(graph: IGraph) -> NumpyNodes:
+def igraph_strongly_connected_components(graph: IGraph) -> NumpyNodeMap:
     cc = graph.value.components(igraph.STRONG).membership
-    return NumpyNodes(np.array(cc), node_index=graph._node_index)
+    return NumpyNodeMap(np.array(cc))

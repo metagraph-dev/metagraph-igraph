@@ -1,45 +1,41 @@
 from typing import Tuple
-from metagraph import concrete_algorithm
-from metagraph.plugins.numpy.types import NumpyNodes, NumpyVector
+from metagraph import concrete_algorithm, NodeID
+from metagraph.plugins.numpy.types import NumpyNodeMap, NumpyVector
 from ..types import IGraph
 import numpy as np
 
 
 @concrete_algorithm("traversal.bellman_ford")
-def igraph_bellman_ford(graph: IGraph, source_node: int) -> Tuple[NumpyNodes, NumpyNodes]:
-    nn = graph.num_nodes
-    weights = "weight" if graph.value.is_weighted() else None
+def igraph_bellman_ford(graph: IGraph, source_node: NodeID) -> Tuple[NumpyNodeMap, NumpyNodeMap]:
+    nn = graph.value.vcount()
     # Calculate path lengths
-    if graph.value.is_weighted():
-        lengths = graph.value.shortest_paths(source_node, weights=weights)
-    else:
-        lengths = graph.value.shortest_paths(source_node)
+    lengths = graph.value.shortest_paths(source_node, weights=graph.edge_weight_label)
     lengths = np.array(lengths[0])
-    missing = lengths == np.inf
-    if missing.any():
-        lengths[missing] = -1
+    mask = lengths != np.inf
+    if not mask.all():
+        lengths[~mask] = -1
+        reachable = np.arange(nn)[mask]
     else:
-        missing = None
+        mask = None
+        reachable = np.arange(nn)
     lengths = lengths.astype(int)
-    # Calculate parents (very inefficient, but it works)
+    # Calculate parents
     parents = np.empty(nn, dtype=int)
-    paths = graph.value.get_all_shortest_paths(source_node, weights=weights)
-    for path in paths:
-        node = path[-1]
-        if node == source_node:
-            parents[node] = node
+    paths = graph.value.get_shortest_paths(source_node, to=list(reachable), weights=graph.edge_weight_label)
+    for dest_node, path in zip(reachable, paths):
+        # Each path goes from source_node to dest_node
+        if dest_node == source_node:
+            parents[dest_node] = dest_node
         else:
-            parents[node] = path[-2]
+            parents[dest_node] = path[-2]
 
-    print(parents)
-    print(lengths)
     return (
-        NumpyNodes(parents, missing_mask=missing, node_index=graph.node_index),
-        NumpyNodes(lengths, missing_mask=missing, node_index=graph.node_index)
+        NumpyNodeMap(parents, mask=mask),
+        NumpyNodeMap(lengths, mask=mask)
     )
 
 
-@concrete_algorithm("traversal.breadth_first_search")
-def igraph_breadth_first_search(graph: IGraph, source_node: int) -> NumpyVector:
+@concrete_algorithm("traversal.bfs_iter")
+def igraph_breadth_first_search(graph: IGraph, source_node: NodeID, depth_limit: int) -> NumpyVector:
     nodes = [node.index for node in graph.value.bfsiter(source_node)]
     return NumpyVector(np.array(nodes))
