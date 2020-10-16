@@ -1,8 +1,9 @@
-from metagraph import concrete_algorithm
+from metagraph import concrete_algorithm, NodeID
 from metagraph.plugins.numpy.types import NumpyNodeMap
 from ..types import IGraph
 import igraph
 import numpy as np
+from typing import Tuple
 
 
 @concrete_algorithm("cluster.triangle_count")
@@ -20,3 +21,23 @@ def igraph_connected_components(graph: IGraph) -> NumpyNodeMap:
 def igraph_strongly_connected_components(graph: IGraph) -> NumpyNodeMap:
     cc = graph.value.components(igraph.STRONG).membership
     return NumpyNodeMap(np.array(cc))
+
+
+@concrete_algorithm("flow.min_cut")
+def min_cut(
+    graph: IGraph,
+    source_node: NodeID,
+    target_node: NodeID,
+) -> Tuple[float, IGraph]:
+    """
+    Returns the sum of the minimum cut weights and a graph containing only those edges
+    which are part of the minimum cut.
+    """
+    g = graph.value
+    cut = g.mincut(source_node, target_node, graph.edge_weight_label)
+    out = igraph.Graph(len(g.vs), directed=g.is_directed())
+    if graph.node_weight_label in g.vs.attributes():
+        out.vs[graph.node_weight_label] = g.vs[graph.node_weight_label]
+    for edge in g.es[cut.cut]:
+        out.add_edge(edge.source, edge.target, **edge.attributes())
+    return cut.value, IGraph(out, node_weight_label=graph.node_weight_label, edge_weight_label=graph.edge_weight_label)

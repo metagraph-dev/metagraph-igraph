@@ -6,7 +6,9 @@ import igraph
 
 if has_grblas:
     import grblas
-    from metagraph.plugins.graphblas.types import GrblasGraph, GrblasEdgeMap, GrblasEdgeSet, GrblasNodeMap
+    from metagraph.plugins.graphblas.types import (
+        GrblasGraph, GrblasEdgeMap, GrblasEdgeSet, GrblasNodeMap, GrblasNodeSet
+    )
 
     @translator
     def graph_from_graphblas(x: GrblasGraph, **props) -> IGraph:
@@ -55,7 +57,8 @@ if has_grblas:
             v = grblas.Vector.from_values(range(nn), x.value.vs[x.node_weight_label])
             nodes = GrblasNodeMap(v)
         else:
-            nodes = None
+            v = grblas.Vector.from_values(range(nn), [1]*nn)
+            nodes = GrblasNodeSet(v)
         ret = GrblasGraph(edges, nodes)
 
         info = GrblasGraph.Type.get_typeinfo(ret)
