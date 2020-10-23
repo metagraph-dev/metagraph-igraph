@@ -81,3 +81,25 @@ def test_igraph():
             {},
             {},
         )
+    # mask doesn't match
+    with pytest.raises(AssertionError):
+        IGraph.Type.assert_equal(
+            IGraph(g),
+            IGraph(g, mask=[True, False, True]),
+            aprops,
+            aprops,
+            {},
+            {},
+        )
+    # mask does match
+    IGraph.Type.assert_equal(
+        IGraph(g, mask=[True, True, True]),
+        IGraph(g, mask=[True, True, True]),
+        aprops,
+        aprops,
+        {},
+        {},
+    )
+    # mask wrong size
+    with pytest.raises(TypeError):
+        IGraph(g, mask=[True, True, False, True, False])

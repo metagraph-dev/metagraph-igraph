@@ -10,12 +10,34 @@ import numpy as np
 
 
 class IGraph(GraphWrapper, abstract=Graph):
-    def __init__(self, graph, node_weight_label="weight", edge_weight_label="weight"):
+    def __init__(self, graph, mask=None, node_weight_label="weight", edge_weight_label="weight"):
         super().__init__()
         self._assert_instance(graph, igraph.Graph)
         self.value = graph
+        if mask is not None:
+            self._assert(
+                graph.vcount() == len(mask),
+                f"mask size ({len(mask)}) and # of nodes in graph ({graph.vcount()}) don't match.",
+            )
+            # Make a copy to avoid mutating the input
+            # Implementers wishing to avoid the copy may assign the "active" vs attribute manually
+            #     rather than pass in the mask to the constructor
+            self.value = graph.copy()
+            self.value.vs['active'] = mask
         self.node_weight_label = node_weight_label
         self.edge_weight_label = edge_weight_label
+
+    def is_sequential(self):
+        return 'active' not in self.value.vs.attributes()
+
+    def active_nodes(self):
+        """
+        Returns a view of active nodes
+        """
+        nodes = self.value.vs
+        if not self.is_sequential():
+            nodes = nodes.select(active=True)
+        return nodes
 
     class TypeMixin:
         @classmethod
@@ -66,17 +88,22 @@ class IGraph(GraphWrapper, abstract=Graph):
             assert aprops1 == aprops2, f"property mismatch: {aprops1} != {aprops2}"
             g1 = obj1.value
             g2 = obj2.value
+            v1 = g1.vs if obj1.is_sequential() else g1.vs.select(active=True)
+            v2 = g2.vs if obj2.is_sequential() else g2.vs.select(active=True)
             # Compare
-            assert g1.vcount() == g2.vcount(), f"num node mismatch: {g1.vcount()} != {g2.vcount()}"
+            assert obj1.is_sequential() == obj2.is_sequential(), f"is_sequential mismatch"
             assert g1.ecount() == g2.ecount(), f"num edges mismatch: {g1.ecount()} != {g2.ecount()}"
+            assert len(v1) == len(v2), f"num node mismatch: {g1.vcount()} != {g2.vcount()}"
+            if not obj1.is_sequential():
+                assert v1.indices == v2.indices, f"node mismatch: {v1.indices} != {v2.indices}"
 
             if aprops1.get("node_type") == "map":
-                v1 = np.array(g1.vs[obj1.node_weight_label], dtype=aprops1["node_dtype"])
-                v2 = np.array(g2.vs[obj2.node_weight_label], dtype=aprops2["node_dtype"])
+                v1vals = np.array(v1[obj1.node_weight_label], dtype=aprops1["node_dtype"])
+                v2vals = np.array(v2[obj2.node_weight_label], dtype=aprops2["node_dtype"])
                 if aprops1["node_dtype"] == "float":
-                    assert np.isclose(v1, v2, rtol=rel_tol, atol=abs_tol)
+                    assert np.isclose(v1vals, v2vals, rtol=rel_tol, atol=abs_tol)
                 else:
-                    assert (v1 == v2).all()
+                    assert (v1vals == v2vals).all()
 
             if aprops1.get("edge_type") == "map":
                 if aprops1["edge_dtype"] == "float":

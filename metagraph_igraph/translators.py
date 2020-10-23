@@ -26,6 +26,7 @@ if has_grblas:
             graph.es["weight"] = weights
         if not xprops["is_directed"]:
             graph.simplify(multiple=True, loops=True, combine_edges="first")
+        # TODO: handle x.nodes
         ret = IGraph(graph)
 
         info = IGraph.Type.get_typeinfo(ret)
@@ -51,13 +52,20 @@ if has_grblas:
         else:
             vals = [1]*len(rows)
             eclass = GrblasEdgeSet
-        m = grblas.Matrix.from_values(rows, cols, vals, nrows=nn, ncols=nn, dtype=dmap[xprops["edge_dtype"]])
+        # Undirected graph must add reversed edges
+        if not xprops["is_directed"]:
+            rows, cols = rows + cols, cols + rows
+            vals *= 2  # duplicate, not element-wise multiply
+
+        m = grblas.Matrix.from_values(rows, cols, vals, nrows=nn, ncols=nn, dtype=dmap[xprops["edge_dtype"]],
+                                      dup_op=grblas.binary.max)
         edges = eclass(m)
+        active_nodes = x.active_nodes()
         if xprops["node_type"] == "map":
-            v = grblas.Vector.from_values(range(nn), x.value.vs[x.node_weight_label])
+            v = grblas.Vector.from_values(active_nodes.indices, active_nodes[x.node_weight_label])
             nodes = GrblasNodeMap(v)
         else:
-            v = grblas.Vector.from_values(range(nn), [1]*nn)
+            v = grblas.Vector.from_values(active_nodes.indices, [1]*len(active_nodes))
             nodes = GrblasNodeSet(v)
         ret = GrblasGraph(edges, nodes)
 
