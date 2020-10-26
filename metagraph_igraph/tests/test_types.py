@@ -81,25 +81,48 @@ def test_igraph():
             {},
             {},
         )
-    # mask doesn't match
+    # node_ids don't match
     with pytest.raises(AssertionError):
         IGraph.Type.assert_equal(
+            IGraph(g, node_ids=[1, 2, 0]),
             IGraph(g),
-            IGraph(g, mask=[True, False, True]),
             aprops,
             aprops,
             {},
             {},
         )
-    # mask does match
+    # node_ids don't match
+    with pytest.raises(AssertionError):
+        IGraph.Type.assert_equal(
+            IGraph(g, node_ids=[1, 2, 0]),
+            IGraph(g, node_ids=[1, 0, 2]),
+            aprops,
+            aprops,
+            {},
+            {},
+        )
+    # node_ids match with relabeling
     IGraph.Type.assert_equal(
-        IGraph(g, mask=[True, True, True]),
-        IGraph(g, mask=[True, True, True]),
+        IGraph(g, node_ids=[1, 2, 0]),
+        IGraph(
+            Graph(3, directed=True,
+                  edges=[(1, 1), (1, 2), (2, 2), (2, 0), (0, 2)], edge_attrs={"weight": [1, 2, 0, 3, 3]}
+                  )
+        ),
         aprops,
         aprops,
         {},
         {},
     )
-    # mask wrong size
+    # node_ids match
+    IGraph.Type.assert_equal(
+        IGraph(g, node_ids=[10, 20, 99]),
+        IGraph(g, node_ids=[10, 20, 99]),
+        aprops,
+        aprops,
+        {},
+        {},
+    )
+    # node_ids wrong size
     with pytest.raises(TypeError):
-        IGraph(g, mask=[True, True, False, True, False])
+        IGraph(g, node_ids=[10, 20, 30, 40, 50, 60])
