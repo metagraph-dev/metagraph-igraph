@@ -16,8 +16,13 @@ if has_grblas:
         xprops = GrblasGraph.Type.compute_abstract_properties(x, ["is_directed", "node_type", "node_dtype",
                                                                   "edge_type", "edge_dtype"])
 
-        graph = igraph.Graph(x.edges.value.nrows, directed=xprops["is_directed"])
+        size = x.edges.value.nrows
+        if x.nodes is not None:
+            size = x.nodes.value.nvals
+        graph = igraph.Graph(size, directed=xprops["is_directed"])
         rows, cols, weights = x.edges.value.to_values()
+        # TODO: get the indexes from x.nodes.value; check if sequential, sort, and add NodeId or not to graph.vs
+        # TODO: if remap is needed, do that now for rows, cols
         graph.add_edges(zip(rows, cols))
         if xprops["node_type"] == "map":
             # Assumes that idx is sorted
@@ -27,7 +32,6 @@ if has_grblas:
             graph.es["weight"] = weights
         if not xprops["is_directed"]:
             graph.simplify(multiple=True, loops=True, combine_edges="first")
-        # TODO: handle x.nodes
         ret = IGraph(graph)
 
         info = IGraph.Type.get_typeinfo(ret)
@@ -45,6 +49,7 @@ if has_grblas:
             "bool": grblas.dtypes.BOOL,
             "int": grblas.dtypes.INT64,
             "float": grblas.dtypes.FP64,
+            None: grblas.dtypes.UINT8,  # unweighted graph
         }
         rows, cols = list(zip(*x.value.get_edgelist()))
         if xprops["edge_type"] == "map":
