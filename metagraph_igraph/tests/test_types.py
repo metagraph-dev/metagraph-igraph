@@ -81,3 +81,48 @@ def test_igraph():
             {},
             {},
         )
+    # node_ids don't match
+    with pytest.raises(AssertionError):
+        IGraph.Type.assert_equal(
+            IGraph(g, node_ids=[1, 2, 0]),
+            IGraph(g),
+            aprops,
+            aprops,
+            {},
+            {},
+        )
+    # node_ids don't match
+    with pytest.raises(AssertionError):
+        IGraph.Type.assert_equal(
+            IGraph(g, node_ids=[1, 2, 0]),
+            IGraph(g, node_ids=[1, 0, 2]),
+            aprops,
+            aprops,
+            {},
+            {},
+        )
+    # node_ids match with relabeling
+    IGraph.Type.assert_equal(
+        IGraph(g, node_ids=[1, 2, 0]),
+        IGraph(
+            Graph(3, directed=True,
+                  edges=[(1, 1), (1, 2), (2, 2), (2, 0), (0, 2)], edge_attrs={"weight": [1, 2, 0, 3, 3]}
+                  )
+        ),
+        aprops,
+        aprops,
+        {},
+        {},
+    )
+    # node_ids match
+    IGraph.Type.assert_equal(
+        IGraph(g, node_ids=[10, 20, 99]),
+        IGraph(g, node_ids=[10, 20, 99]),
+        aprops,
+        aprops,
+        {},
+        {},
+    )
+    # node_ids wrong size
+    with pytest.raises(TypeError):
+        IGraph(g, node_ids=[10, 20, 30, 40, 50, 60])

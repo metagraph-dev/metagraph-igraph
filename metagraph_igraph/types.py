@@ -10,12 +10,41 @@ import numpy as np
 
 
 class IGraph(GraphWrapper, abstract=Graph):
-    def __init__(self, graph, node_weight_label="weight", edge_weight_label="weight"):
+    def __init__(self, graph, node_ids=None, node_weight_label="weight", edge_weight_label="weight"):
+        """
+        :param graph: an igraph.Graph object
+        :param node_ids: list of NodeIDs corresponding to the graph's vertex ids
+        :param node_weight_label: default is "weight"
+        :param edge_weight_label: default is "weight"
+
+        The node_ids will be used to add a "NodeId" vertex attribute to a copy of the graph.
+        Manually adding the "NodeId" vertex attribute will avoid the copy and achieves the same result.
+        """
         super().__init__()
         self._assert_instance(graph, igraph.Graph)
         self.value = graph
+        if node_ids is not None:
+            self._assert(
+                graph.vcount() == len(node_ids),
+                f"node_list size ({len(node_ids)}) and # of nodes in graph ({graph.vcount()}) don't match.",
+            )
+            # Make a copy to avoid mutating the input
+            self.value = graph.copy()
+            self.value.vs["NodeId"] = node_ids
+        if "NodeId" in self.value.vs.attributes():
+            self._is_sequential = False
+            self._nodeid_lookup = {v["NodeId"]: v.index for v in self.value.vs}
+            self._assert(
+                len(self._nodeid_lookup) == self.value.vcount(),
+                f"node_ids are not unique",
+            )
+        else:
+            self._is_sequential = True
         self.node_weight_label = node_weight_label
         self.edge_weight_label = edge_weight_label
+
+    def is_sequential(self):
+        return self._is_sequential
 
     class TypeMixin:
         @classmethod
@@ -66,17 +95,30 @@ class IGraph(GraphWrapper, abstract=Graph):
             assert aprops1 == aprops2, f"property mismatch: {aprops1} != {aprops2}"
             g1 = obj1.value
             g2 = obj2.value
+            seq1 = obj1.is_sequential()
+            seq2 = obj2.is_sequential()
+            nid1 = set(g1.vs.indices) if seq1 else set(obj1._nodeid_lookup)
+            nid2 = set(g2.vs.indices) if seq2 else set(obj2._nodeid_lookup)
+            v1 = g1.vs
+            if not seq1:
+                sorter = np.array(v1["NodeId"]).argsort()
+                v1 = v1[sorter.tolist()]
+            v2 = g2.vs
+            if not seq2:
+                sorter = np.array(g2.vs["NodeId"]).argsort()
+                v2 = v2[sorter.tolist()]
             # Compare
-            assert g1.vcount() == g2.vcount(), f"num node mismatch: {g1.vcount()} != {g2.vcount()}"
             assert g1.ecount() == g2.ecount(), f"num edges mismatch: {g1.ecount()} != {g2.ecount()}"
+            assert g1.vcount() == g2.vcount(), f"num node mismatch: {g1.vcount()} != {g2.vcount()}"
+            assert nid1 == nid2, f"node id mismatch: {nid1 ^ nid2}"
 
             if aprops1.get("node_type") == "map":
-                v1 = np.array(g1.vs[obj1.node_weight_label], dtype=aprops1["node_dtype"])
-                v2 = np.array(g2.vs[obj2.node_weight_label], dtype=aprops2["node_dtype"])
+                v1vals = np.array(v1[obj1.node_weight_label], dtype=aprops1["node_dtype"])
+                v2vals = np.array(v2[obj2.node_weight_label], dtype=aprops2["node_dtype"])
                 if aprops1["node_dtype"] == "float":
-                    assert np.isclose(v1, v2, rtol=rel_tol, atol=abs_tol)
+                    assert np.isclose(v1vals, v2vals, rtol=rel_tol, atol=abs_tol)
                 else:
-                    assert (v1 == v2).all()
+                    assert (v1vals == v2vals).all()
 
             if aprops1.get("edge_type") == "map":
                 if aprops1["edge_dtype"] == "float":
@@ -86,10 +128,14 @@ class IGraph(GraphWrapper, abstract=Graph):
                     comp = operator.eq
                     compstr = "equal to"
                 for e1 in g1.es:
+                    sid = e1.source if seq1 else e1.source_vertex["NodeId"]
+                    tid = e1.target if seq1 else e1.target_vertex["NodeId"]
+                    s2 = sid if seq2 else obj2._nodeid_lookup[sid]
+                    t2 = tid if seq2 else obj2._nodeid_lookup[tid]
                     try:
-                        e2 = g2.es[g2.get_eid(*e1.tuple)]
+                        e2 = g2.es[g2.get_eid(s2, t2)]
                     except igraph.InternalError:
-                        raise AssertionError(f'Mismatched edge: {e1.tuple}')
+                        raise AssertionError(f'Mismatched edge: {sid, tid}')
                     w1 = e1[obj1.edge_weight_label]
                     w2 = e2[obj2.edge_weight_label]
                     assert comp(w1, w2), f"{w1} not {compstr} {w2}"
