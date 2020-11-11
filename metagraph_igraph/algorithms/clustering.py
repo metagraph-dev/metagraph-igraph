@@ -14,13 +14,15 @@ def igraph_triangle_count(graph: IGraph) -> int:
 @concrete_algorithm("clustering.connected_components")
 def igraph_connected_components(graph: IGraph) -> NumpyNodeMap:
     cc = graph.value.components(igraph.WEAK).membership
-    return NumpyNodeMap(np.array(cc))
+    node_ids = None if graph.is_sequential() else graph.value.vs["NodeId"]
+    return NumpyNodeMap(np.array(cc), node_ids)
 
 
 @concrete_algorithm("clustering.strongly_connected_components")
 def igraph_strongly_connected_components(graph: IGraph) -> NumpyNodeMap:
     cc = graph.value.components(igraph.STRONG).membership
-    return NumpyNodeMap(np.array(cc))
+    node_ids = None if graph.is_sequential() else graph.value.vs["NodeId"]
+    return NumpyNodeMap(np.array(cc), node_ids)
 
 
 @concrete_algorithm("flow.max_flow")

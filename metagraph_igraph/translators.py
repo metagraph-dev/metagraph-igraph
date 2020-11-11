@@ -16,28 +16,26 @@ if has_grblas:
         xprops = GrblasGraph.Type.compute_abstract_properties(x, ["is_directed", "node_type", "node_dtype",
                                                                   "edge_type", "edge_dtype"])
 
-        size = x.edges.value.nrows
-        if x.nodes is not None:
-            size = x.nodes.value.nvals
-        graph = igraph.Graph(size, directed=xprops["is_directed"])
-        rows, cols, weights = x.edges.value.to_values()
-        # TODO: get the indexes from x.nodes.value; check if sequential, sort, and add NodeId or not to graph.vs
-        # TODO: if remap is needed, do that now for rows, cols
-        graph.add_edges(zip(rows, cols))
+        vcount = x.nodes.nvals
+        is_sequential = x.nodes.size == vcount
+        idx, node_weights = x.nodes.to_values()
+        graph = igraph.Graph(vcount, directed=xprops["is_directed"])
+        if is_sequential:
+            rows, cols, edge_weights = x.value.to_values()
+        else:
+            # Compress node ids as required by IGraph and add NodeId attributes to `vs`
+            compressed = x.value[idx, idx].new()
+            rows, cols, edge_weights = compressed.to_values()
+            graph.vs["NodeId"] = idx.tolist()
+        graph.add_edges(zip(rows.tolist(), cols.tolist()))
+
         if xprops["node_type"] == "map":
-            # Assumes that idx is sorted
-            idx, vals = x.nodes.value.to_values()
-            graph.vs["weight"] = vals
+            graph.vs["weight"] = node_weights.tolist()
         if xprops["edge_type"] == "map":
-            graph.es["weight"] = weights
+            graph.es["weight"] = edge_weights.tolist()
         if not xprops["is_directed"]:
-            graph.simplify(multiple=True, loops=True, combine_edges="first")
-        ret = IGraph(graph)
-
-        info = IGraph.Type.get_typeinfo(ret)
-        info.known_abstract_props.update(xprops)
-
-        return ret
+            graph.simplify(multiple=True, loops=False, combine_edges="first")
+        return IGraph(graph, aprops=xprops)
 
     @translator
     def graph_to_graphblas(x: IGraph, **props) -> GrblasGraph:
@@ -54,37 +52,29 @@ if has_grblas:
         rows, cols = list(zip(*x.value.get_edgelist()))
         if xprops["edge_type"] == "map":
             vals = x.value.es[x.edge_weight_label]
-            eclass = GrblasEdgeMap
         else:
-            vals = [1]*len(rows)
-            eclass = GrblasEdgeSet
+            vals = np.ones_like(rows)
 
         # Handle non-sequential graph
         if not x.is_sequential():
             node_ids = np.array(x.value.vs["NodeId"])
-            rows = node_ids[list(rows)].tolist()
-            cols = node_ids[list(cols)].tolist()
+            rows = node_ids[list(rows)]
+            cols = node_ids[list(cols)]
             nn = node_ids.max() + 1
         else:
             node_ids = x.value.vs.indices
 
         # Undirected graph must add reversed edges
         if not xprops["is_directed"]:
-            rows, cols = rows + cols, cols + rows
-            vals *= 2  # duplicate, not element-wise multiply
+            rows, cols = np.concatenate([rows, cols]), np.concatenate([cols, rows])
+            vals = np.concatenate([vals, vals])
 
-        m = grblas.Matrix.from_values(rows, cols, vals, nrows=nn, ncols=nn, dtype=dmap[xprops["edge_dtype"]],
-                                      dup_op=grblas.binary.max)
-        edges = eclass(m)
+        m = grblas.Matrix.from_values(rows, cols, vals, nrows=nn, ncols=nn,
+                                      dtype=dmap[xprops["edge_dtype"]], dup_op=grblas.binary.max)
+
         if xprops["node_type"] == "map":
-            v = grblas.Vector.from_values(list(node_ids), x.value.vs[x.node_weight_label])
-            nodes = GrblasNodeMap(v)
+            nodes = grblas.Vector.from_values(node_ids, x.value.vs[x.node_weight_label])
         else:
-            v = grblas.Vector.from_values(list(node_ids), [1]*x.value.vcount())
-            nodes = GrblasNodeSet(v)
-        ret = GrblasGraph(edges, nodes)
+            nodes = grblas.Vector.from_values(node_ids, np.ones(x.value.vcount(), bool))
 
-        info = GrblasGraph.Type.get_typeinfo(ret)
-        info.known_abstract_props.update(xprops)
-
-        return ret
+        return GrblasGraph(m, nodes, aprops=xprops)
