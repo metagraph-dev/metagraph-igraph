@@ -1,0 +1,12 @@
+name: mg_igraph
+dependencies:
+# dev environment
+  - python=3.8
+  - coverage
+  - pytest
+  - pytest-cov
+  - black
+
+# dependencies (so setup.py develop doesn't pip install them)
+  - metagraph
+  - python-igraph
