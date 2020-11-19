@@ -1,0 +1,40 @@
+package:
+  name: metagraph-igraph
+  version: {{ environment.get('GIT_DESCRIBE_TAG', 'unknown') }}
+
+source:
+  path: ../..
+
+build:
+  number: {{ environment.get('GIT_DESCRIBE_NUMBER', 0)|int }}
+  string: py{{ PY_VER }}h{{ PKG_HASH }}_{{GIT_DESCRIBE_HASH}}_{{ GIT_DESCRIBE_NUMBER }}
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python
+
+  run:
+    - python
+    - python-igraph
+    - metagraph
+
+test:
+  requires:
+    - pytest
+    - pytest-cov
+    - coverage
+
+  commands:
+    - pytest --pyargs metagraph_igraph.tests
+    - pytest --pyargs metagraph.tests
+
+about:
+  home: https://github.com/metagraph-dev/metagraph-igraph
+  license: Apache 2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: 'Metagraph plugin for the python-igraph library'
+  description: |
+      Plugin for metagraph exposing the data structures and algorithms of python-igraph
+  dev_url: https://github.com/metagraph-dev/metagraph-igraph
