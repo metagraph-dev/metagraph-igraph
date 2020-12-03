@@ -90,9 +90,10 @@ jobs:
           # Install built_package
           BUILT_PKG=`ls ./artifact_storage | head -1`
           conda install ./artifact_storage/$BUILT_PKG
+          conda list
           # Install dependencies listed in built package
           # (This is a workaround because conda does not install dependencies for local file installs)
-          conda update -c ${{ env.CHANNELS }} metagraph_igraph
+          conda update -c ${{ env.CHANNELS }} metagraph-igraph
           conda list
       - name: Pytest
         run: |
