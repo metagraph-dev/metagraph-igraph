@@ -2,6 +2,7 @@ name: mg_igraph
 
 channels:
 - conda-forge
+- metagraph/label/dev
 
 dependencies:
 # dev environment

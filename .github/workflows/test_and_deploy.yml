@@ -7,9 +7,11 @@ on:
   push:
     branches:
       - main
+    tags:
+      - '*'
 
 env:
-  MAX_PYVER: 3.8
+  MAIN_PYVER: 3.8
 
 jobs:
   build:
@@ -88,7 +90,7 @@ jobs:
           conda install ./artifact_storage/$BUILT_PKG
           # Install dependencies listed in built package
           # (This is a workaround because conda does not install dependencies for local file installs)
-          conda update -c defaults -c conda-forge metagraph
+          conda update -c defaults -c conda-forge -c metagraph/label/dev metagraph_igraph
           conda list
       - name: Pytest
         run: |
@@ -101,14 +103,20 @@ jobs:
   dev_deploy:
     runs-on: ubuntu-latest
     needs: test_pyver
-    if: github.ref == 'refs/heads/main'
+    if: (github.ref == 'refs/heads/main') || contains(github.ref, 'refs/tags/')
+    env:
+      AC_LABEL: dev
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v2
         with:
           name: built_package
           path: ./artifact_storage
-      - name: Deploy with dev label
+      - name: Determine label
+        if: contains(github.ref, 'refs/tags/')
+        run: |
+          echo "AC_LABEL=main" >> $GITHUB_ENV
+      - name: Deploy to Anaconda Cloud
         run: |
           source "$CONDA/etc/profile.d/conda.sh"
           conda config --set always_yes yes --set changeps1 no
@@ -116,4 +124,4 @@ jobs:
           ls -la ./artifact_storage
           UPLOAD=`ls ./artifact_storage | head -1`
           echo "Uploading $UPLOAD with label=dev"
-          $CONDA/bin/anaconda -t ${{ secrets.ANACONDA_ORG_TOKEN }} upload -u metagraph -l dev --no-progress --force --no-register ./artifact_storage/$UPLOAD
+          $CONDA/bin/anaconda -t ${{ secrets.ANACONDA_ORG_TOKEN }} upload -u metagraph -l ${{ env.AC_LABEL }} --no-progress --force --no-register ./artifact_storage/$UPLOAD

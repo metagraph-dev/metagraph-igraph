@@ -17,7 +17,7 @@ requirements:
   run:
     - python
     - python-igraph
-    - metagraph
+    - metagraph >=0.2.3
 
 test:
   requires:
