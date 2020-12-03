@@ -12,6 +12,7 @@ on:
 
 env:
   MAIN_PYVER: 3.8
+  CHANNELS: defaults -c conda-forge -c metagraph/label/dev
 
 jobs:
   build:
@@ -52,9 +53,9 @@ jobs:
       - name: Conda Build
         run: |
           source "$CONDA/etc/profile.d/conda.sh"
-          conda build -c defaults -c conda-forge --python ${{ env.MAIN_PYVER }} continuous_integration/conda
+          conda build -c ${{ env.CHANNELS }} --python ${{ env.MAIN_PYVER }} continuous_integration/conda
           # This doesn't rebuild, but simply computes the name of the file that was previously built
-          OUTPUT=$(conda build --output -c defaults -c conda-forge --python ${{ env.MAIN_PYVER }} continuous_integration/conda)
+          OUTPUT=$(conda build --output -c ${{ env.CHANNELS }} --python ${{ env.MAIN_PYVER }} continuous_integration/conda)
           echo "Path to built package:"
           echo $OUTPUT
           echo "CONDA_BUILD_OUTPUT=$OUTPUT" >> $GITHUB_ENV
@@ -91,7 +92,7 @@ jobs:
           conda install ./artifact_storage/$BUILT_PKG
           # Install dependencies listed in built package
           # (This is a workaround because conda does not install dependencies for local file installs)
-          conda update -c defaults -c conda-forge -c metagraph/label/dev metagraph_igraph
+          conda update -c ${{ env.CHANNELS }} metagraph_igraph
           conda list
       - name: Pytest
         run: |
