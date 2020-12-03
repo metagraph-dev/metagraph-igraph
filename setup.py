@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import versioneer
 
 setup(
-    name="metagraph_igraph",
+    name="metagraph-igraph",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description="python-igraph plugins for Metagraph",
