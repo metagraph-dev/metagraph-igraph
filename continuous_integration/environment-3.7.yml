@@ -1,4 +1,8 @@
 name: mg_igraph
+
+channels:
+- conda-forge
+
 dependencies:
 # dev environment
   - python=3.7
