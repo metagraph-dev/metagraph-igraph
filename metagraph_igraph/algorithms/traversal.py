@@ -1,6 +1,6 @@
 from typing import Tuple
 from metagraph import concrete_algorithm, NodeID
-from metagraph.plugins.numpy.types import NumpyNodeMap, NumpyVector
+from metagraph.plugins.numpy.types import NumpyNodeMap, NumpyVectorType
 from ..types import IGraph
 import numpy as np
 
@@ -16,7 +16,6 @@ def igraph_bellman_ford(graph: IGraph, source_node: NodeID) -> Tuple[NumpyNodeMa
         lengths[~mask] = -1
         reachable = np.arange(nn)[mask]
     else:
-        mask = None
         reachable = np.arange(nn)
     lengths = lengths.astype(int)
     # Calculate parents
@@ -29,13 +28,14 @@ def igraph_bellman_ford(graph: IGraph, source_node: NodeID) -> Tuple[NumpyNodeMa
         else:
             parents[dest_node] = path[-2]
 
+    node_ids = None if graph.is_sequential() else graph.value.vs["NodeId"]
     return (
-        NumpyNodeMap(parents, mask=mask),
-        NumpyNodeMap(lengths, mask=mask)
+        NumpyNodeMap(parents, node_ids),
+        NumpyNodeMap(lengths, node_ids)
     )
 
 
 @concrete_algorithm("traversal.bfs_iter")
-def igraph_breadth_first_search(graph: IGraph, source_node: NodeID, depth_limit: int) -> NumpyVector:
+def igraph_breadth_first_search(graph: IGraph, source_node: NodeID, depth_limit: int) -> NumpyVectorType:
     nodes = [node.index for node in graph.value.bfsiter(source_node)]
-    return NumpyVector(np.array(nodes))
+    return np.array(nodes)

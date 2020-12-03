@@ -10,7 +10,7 @@ import numpy as np
 
 
 class IGraph(GraphWrapper, abstract=Graph):
-    def __init__(self, graph, node_ids=None, node_weight_label="weight", edge_weight_label="weight"):
+    def __init__(self, graph, node_ids=None, node_weight_label="weight", edge_weight_label="weight", *, aprops=None):
         """
         :param graph: an igraph.Graph object
         :param node_ids: list of NodeIDs corresponding to the graph's vertex ids
@@ -20,9 +20,12 @@ class IGraph(GraphWrapper, abstract=Graph):
         The node_ids will be used to add a "NodeId" vertex attribute to a copy of the graph.
         Manually adding the "NodeId" vertex attribute will avoid the copy and achieves the same result.
         """
-        super().__init__()
+        super().__init__(aprops=aprops)
         self._assert_instance(graph, igraph.Graph)
         self.value = graph
+        self.node_weight_label = node_weight_label
+        self.edge_weight_label = edge_weight_label
+
         if node_ids is not None:
             self._assert(
                 graph.vcount() == len(node_ids),
@@ -31,17 +34,16 @@ class IGraph(GraphWrapper, abstract=Graph):
             # Make a copy to avoid mutating the input
             self.value = graph.copy()
             self.value.vs["NodeId"] = node_ids
+
         if "NodeId" in self.value.vs.attributes():
             self._is_sequential = False
             self._nodeid_lookup = {v["NodeId"]: v.index for v in self.value.vs}
             self._assert(
                 len(self._nodeid_lookup) == self.value.vcount(),
-                f"node_ids are not unique",
+                "node_ids are not unique",
             )
         else:
             self._is_sequential = True
-        self.node_weight_label = node_weight_label
-        self.edge_weight_label = edge_weight_label
 
     def is_sequential(self):
         return self._is_sequential

@@ -14,8 +14,9 @@ def igraph_degree(graph: IGraph, in_edges: bool, out_edges: bool) -> NumpyNodeMa
     elif out_edges:
         degrees = graph.value.degree(mode='out')
     else:
-        degrees = [0]*len(graph.value.vs)
-    return NumpyNodeMap(np.array(degrees))
+        degrees = [0] * len(graph.value.vs)
+    node_ids = None if graph.is_sequential() else graph.value.vs["NodeId"]
+    return NumpyNodeMap(np.array(degrees), node_ids)
 
 
 @concrete_algorithm("util.graph.isomorphic")
