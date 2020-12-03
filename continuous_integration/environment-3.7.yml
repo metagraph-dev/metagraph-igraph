@@ -1,4 +1,4 @@
-name: mg_igraph
+name: mg
 
 channels:
 - conda-forge
