@@ -35,7 +35,7 @@ jobs:
         run: |
           source "$CONDA/etc/profile.d/conda.sh"
           conda activate mg
-          black metagraph *.py --check --diff
+          black metagraph_igraph *.py --check --diff
       - name: Pytest
         run: |
           source "$CONDA/etc/profile.d/conda.sh"
@@ -67,6 +67,7 @@ jobs:
 
   test_pyver:
     runs-on: ubuntu-latest
+    needs: build
     strategy:
       matrix:
         pyver:
