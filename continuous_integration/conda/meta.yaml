@@ -1,14 +1,15 @@
 package:
   name: metagraph-igraph
-  version: {{ environment.get('GIT_DESCRIBE_TAG', 'unknown') }}
+  version: {{ environ.get('GIT_DESCRIBE_TAG', 'unknown') }}
 
 source:
   path: ../..
 
 build:
-  number: {{ environment.get('GIT_DESCRIBE_NUMBER', 0)|int }}
-  string: py{{ PY_VER }}h{{ PKG_HASH }}_{{GIT_DESCRIBE_HASH}}_{{ GIT_DESCRIBE_NUMBER }}
-  script: "{{ PYTHON }} -m pip install . -vv"
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0)|int }}
+  string: {{GIT_DESCRIBE_HASH}}_{{ GIT_DESCRIBE_NUMBER }}
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+  noarch: python
 
 requirements:
   host:
@@ -17,7 +18,7 @@ requirements:
   run:
     - python
     - python-igraph
-    - metagraph
+    - metagraph >=0.2.3
 
 test:
   requires:

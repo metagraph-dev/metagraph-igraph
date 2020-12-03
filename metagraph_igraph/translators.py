@@ -8,13 +8,18 @@ import numpy as np
 if has_grblas:
     import grblas
     from metagraph.plugins.graphblas.types import (
-        GrblasGraph, GrblasEdgeMap, GrblasEdgeSet, GrblasNodeMap, GrblasNodeSet
+        GrblasGraph,
+        GrblasEdgeMap,
+        GrblasEdgeSet,
+        GrblasNodeMap,
+        GrblasNodeSet,
     )
 
     @translator
     def graph_from_graphblas(x: GrblasGraph, **props) -> IGraph:
-        xprops = GrblasGraph.Type.compute_abstract_properties(x, ["is_directed", "node_type", "node_dtype",
-                                                                  "edge_type", "edge_dtype"])
+        xprops = GrblasGraph.Type.compute_abstract_properties(
+            x, ["is_directed", "node_type", "node_dtype", "edge_type", "edge_dtype"]
+        )
 
         vcount = x.nodes.nvals
         is_sequential = x.nodes.size == vcount
@@ -39,8 +44,9 @@ if has_grblas:
 
     @translator
     def graph_to_graphblas(x: IGraph, **props) -> GrblasGraph:
-        xprops = IGraph.Type.compute_abstract_properties(x, ["is_directed", "node_type", "node_dtype",
-                                                             "edge_type", "edge_dtype"])
+        xprops = IGraph.Type.compute_abstract_properties(
+            x, ["is_directed", "node_type", "node_dtype", "edge_type", "edge_dtype"]
+        )
 
         nn = x.value.vcount()
         dmap = {
@@ -69,8 +75,15 @@ if has_grblas:
             rows, cols = np.concatenate([rows, cols]), np.concatenate([cols, rows])
             vals = np.concatenate([vals, vals])
 
-        m = grblas.Matrix.from_values(rows, cols, vals, nrows=nn, ncols=nn,
-                                      dtype=dmap[xprops["edge_dtype"]], dup_op=grblas.binary.max)
+        m = grblas.Matrix.from_values(
+            rows,
+            cols,
+            vals,
+            nrows=nn,
+            ncols=nn,
+            dtype=dmap[xprops["edge_dtype"]],
+            dup_op=grblas.binary.max,
+        )
 
         if xprops["node_type"] == "map":
             nodes = grblas.Vector.from_values(node_ids, x.value.vs[x.node_weight_label])

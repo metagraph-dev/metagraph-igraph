@@ -6,7 +6,9 @@ import numpy as np
 
 
 @concrete_algorithm("traversal.bellman_ford")
-def igraph_bellman_ford(graph: IGraph, source_node: NodeID) -> Tuple[NumpyNodeMap, NumpyNodeMap]:
+def igraph_bellman_ford(
+    graph: IGraph, source_node: NodeID
+) -> Tuple[NumpyNodeMap, NumpyNodeMap]:
     nn = graph.value.vcount()
     # Calculate path lengths
     lengths = graph.value.shortest_paths(source_node, weights=graph.edge_weight_label)
@@ -20,7 +22,9 @@ def igraph_bellman_ford(graph: IGraph, source_node: NodeID) -> Tuple[NumpyNodeMa
     lengths = lengths.astype(int)
     # Calculate parents
     parents = np.empty(nn, dtype=int)
-    paths = graph.value.get_shortest_paths(source_node, to=list(reachable), weights=graph.edge_weight_label)
+    paths = graph.value.get_shortest_paths(
+        source_node, to=list(reachable), weights=graph.edge_weight_label
+    )
     for dest_node, path in zip(reachable, paths):
         # Each path goes from source_node to dest_node
         if dest_node == source_node:
@@ -29,13 +33,12 @@ def igraph_bellman_ford(graph: IGraph, source_node: NodeID) -> Tuple[NumpyNodeMa
             parents[dest_node] = path[-2]
 
     node_ids = None if graph.is_sequential() else graph.value.vs["NodeId"]
-    return (
-        NumpyNodeMap(parents, node_ids),
-        NumpyNodeMap(lengths, node_ids)
-    )
+    return (NumpyNodeMap(parents, node_ids), NumpyNodeMap(lengths, node_ids))
 
 
 @concrete_algorithm("traversal.bfs_iter")
-def igraph_breadth_first_search(graph: IGraph, source_node: NodeID, depth_limit: int) -> NumpyVectorType:
+def igraph_breadth_first_search(
+    graph: IGraph, source_node: NodeID, depth_limit: int
+) -> NumpyVectorType:
     nodes = [node.index for node in graph.value.bfsiter(source_node)]
     return np.array(nodes)

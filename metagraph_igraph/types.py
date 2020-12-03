@@ -10,7 +10,15 @@ import numpy as np
 
 
 class IGraph(GraphWrapper, abstract=Graph):
-    def __init__(self, graph, node_ids=None, node_weight_label="weight", edge_weight_label="weight", *, aprops=None):
+    def __init__(
+        self,
+        graph,
+        node_ids=None,
+        node_weight_label="weight",
+        edge_weight_label="weight",
+        *,
+        aprops=None,
+    ):
         """
         :param graph: an igraph.Graph object
         :param node_ids: list of NodeIDs corresponding to the graph's vertex ids
@@ -93,7 +101,18 @@ class IGraph(GraphWrapper, abstract=Graph):
             return ret
 
         @classmethod
-        def assert_equal(cls, obj1, obj2, aprops1, aprops2, cprops1, cprops2, *, rel_tol=1e-9, abs_tol=0.0):
+        def assert_equal(
+            cls,
+            obj1,
+            obj2,
+            aprops1,
+            aprops2,
+            cprops1,
+            cprops2,
+            *,
+            rel_tol=1e-9,
+            abs_tol=0.0,
+        ):
             assert aprops1 == aprops2, f"property mismatch: {aprops1} != {aprops2}"
             g1 = obj1.value
             g2 = obj2.value
@@ -110,13 +129,21 @@ class IGraph(GraphWrapper, abstract=Graph):
                 sorter = np.array(g2.vs["NodeId"]).argsort()
                 v2 = v2[sorter.tolist()]
             # Compare
-            assert g1.ecount() == g2.ecount(), f"num edges mismatch: {g1.ecount()} != {g2.ecount()}"
-            assert g1.vcount() == g2.vcount(), f"num node mismatch: {g1.vcount()} != {g2.vcount()}"
+            assert (
+                g1.ecount() == g2.ecount()
+            ), f"num edges mismatch: {g1.ecount()} != {g2.ecount()}"
+            assert (
+                g1.vcount() == g2.vcount()
+            ), f"num node mismatch: {g1.vcount()} != {g2.vcount()}"
             assert nid1 == nid2, f"node id mismatch: {nid1 ^ nid2}"
 
             if aprops1.get("node_type") == "map":
-                v1vals = np.array(v1[obj1.node_weight_label], dtype=aprops1["node_dtype"])
-                v2vals = np.array(v2[obj2.node_weight_label], dtype=aprops2["node_dtype"])
+                v1vals = np.array(
+                    v1[obj1.node_weight_label], dtype=aprops1["node_dtype"]
+                )
+                v2vals = np.array(
+                    v2[obj2.node_weight_label], dtype=aprops2["node_dtype"]
+                )
                 if aprops1["node_dtype"] == "float":
                     assert np.isclose(v1vals, v2vals, rtol=rel_tol, atol=abs_tol)
                 else:
@@ -137,7 +164,7 @@ class IGraph(GraphWrapper, abstract=Graph):
                     try:
                         e2 = g2.es[g2.get_eid(s2, t2)]
                     except igraph.InternalError:
-                        raise AssertionError(f'Mismatched edge: {sid, tid}')
+                        raise AssertionError(f"Mismatched edge: {sid, tid}")
                     w1 = e1[obj1.edge_weight_label]
                     w2 = e2[obj2.edge_weight_label]
                     assert comp(w1, w2), f"{w1} not {compstr} {w2}"
