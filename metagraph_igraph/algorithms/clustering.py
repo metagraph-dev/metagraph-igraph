@@ -6,7 +6,7 @@ import numpy as np
 from typing import Tuple
 
 
-@concrete_algorithm("cluster.triangle_count")
+@concrete_algorithm("clustering.triangle_count")
 def igraph_triangle_count(graph: IGraph) -> int:
     return len(graph.value.cliques(3, 3))
 
