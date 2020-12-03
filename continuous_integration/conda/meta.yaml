@@ -9,6 +9,7 @@ build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0)|int }}
   string: py{{ PY_VER }}h{{ PKG_HASH }}_{{GIT_DESCRIBE_HASH}}_{{ GIT_DESCRIBE_NUMBER }}
   script: "{{ PYTHON }} -m pip install . -vv"
+  noarch: python
 
 requirements:
   host:
