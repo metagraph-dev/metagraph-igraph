@@ -17,7 +17,11 @@ def extract_subgraph(graph: IGraph, nodes: NumpyNodeSet) -> IGraph:
         real_node_ids = np.array(g.vs["NodeId"])
         node_list = real_node_ids[node_list]
     subg = g.subgraph(node_list.tolist())
-    return IGraph(subg, node_weight_label=graph.node_weight_label, edge_weight_label=graph.edge_weight_label)
+    return IGraph(
+        subg,
+        node_weight_label=graph.node_weight_label,
+        edge_weight_label=graph.edge_weight_label,
+    )
 
 
 @concrete_algorithm("subgraph.k_core")
@@ -28,7 +32,11 @@ def k_core(graph: IGraph, k: int) -> IGraph:
     else:
         g = graph.value
     kcore = g.k_core(k)
-    return IGraph(kcore, node_weight_label=graph.node_weight_label, edge_weight_label=graph.edge_weight_label)
+    return IGraph(
+        kcore,
+        node_weight_label=graph.node_weight_label,
+        edge_weight_label=graph.edge_weight_label,
+    )
 
 
 @concrete_algorithm("subgraph.subisomorphic")
@@ -43,11 +51,13 @@ def maximal_independent_set(graph: IGraph) -> NumpyNodeSet:
 
 
 @concrete_algorithm("traversal.minimum_spanning_tree")
-def minimum_spanning_tree(
-    graph: IGraph
-) -> IGraph:
+def minimum_spanning_tree(graph: IGraph) -> IGraph:
     mst = graph.value.spanning_tree(graph.edge_weight_label)
-    return IGraph(mst, node_weight_label=graph.node_weight_label, edge_weight_label=graph.edge_weight_label)
+    return IGraph(
+        mst,
+        node_weight_label=graph.node_weight_label,
+        edge_weight_label=graph.edge_weight_label,
+    )
 
 
 @concrete_algorithm("subgraph.sample.node_sampling")

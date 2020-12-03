@@ -15,10 +15,13 @@ def test_igraph():
         "edge_type": "map",
         "edge_dtype": "int",
     }
-    g = Graph(3, directed=True, edges=[(0, 0), (0, 1), (1, 1), (1, 2), (2, 1)], edge_attrs={"weight": [1, 2, 0, 3, 3]})
-    IGraph.Type.assert_equal(
-        IGraph(g), IGraph(g.copy()), aprops, aprops, {}, {}
+    g = Graph(
+        3,
+        directed=True,
+        edges=[(0, 0), (0, 1), (1, 1), (1, 2), (2, 1)],
+        edge_attrs={"weight": [1, 2, 0, 3, 3]},
     )
+    IGraph.Type.assert_equal(IGraph(g), IGraph(g.copy()), aprops, aprops, {}, {})
     g_close = g.copy()
     g_close.es[g_close.get_eid(0, 0)]["weight"] = 1.0000000000001
     IGraph.Type.assert_equal(
@@ -29,13 +32,14 @@ def test_igraph():
         {},
         {},
     )
-    g_diff = Graph(3, directed=True,
-                   edges=[(0, 0), (0, 1), (1, 1), (1, 2), (2, 1)],
-                   edge_attrs={"weight": [1, 3, 0, 3, 3]})
+    g_diff = Graph(
+        3,
+        directed=True,
+        edges=[(0, 0), (0, 1), (1, 1), (1, 2), (2, 1)],
+        edge_attrs={"weight": [1, 3, 0, 3, 3]},
+    )
     with pytest.raises(AssertionError):
-        IGraph.Type.assert_equal(
-            IGraph(g), IGraph(g_diff), aprops, aprops, {}, {}
-        )
+        IGraph.Type.assert_equal(IGraph(g), IGraph(g_diff), aprops, aprops, {}, {})
     # Ignore weights if unweighted
     IGraph.Type.assert_equal(
         IGraph(g),
@@ -49,9 +53,13 @@ def test_igraph():
         IGraph.Type.assert_equal(
             IGraph(g),
             IGraph(
-                Graph(3, directed=True,
-                      edges=[(0, 0), (0, 1), (1, 1), (1, 2), (2, 0)], edge_attrs={"weight": [1, 2, 0, 3, 3]}
-                )  # change is here                             ^^^
+                Graph(
+                    3,
+                    directed=True,
+                    edges=[(0, 0), (0, 1), (1, 1), (1, 2), (2, 0)],
+                    # change is here                          ^^^
+                    edge_attrs={"weight": [1, 2, 0, 3, 3]},
+                )
             ),
             aprops,
             aprops,
@@ -62,9 +70,14 @@ def test_igraph():
         IGraph.Type.assert_equal(
             IGraph(g),
             IGraph(
-                Graph(3, directed=True,
-                      edges=[(0, 0), (0, 1), (1, 1), (1, 2), (2, 1), (2, 0)], edge_attrs={"weight": [1, 2, 0, 3, 3, 0]}
-                )  # extra element                                   ^^^^^^                                        ^^^
+                Graph(
+                    3,
+                    directed=True,
+                    edges=[(0, 0), (0, 1), (1, 1), (1, 2), (2, 1), (2, 0)],
+                    # extra element                                ^^^^^^
+                    edge_attrs={"weight": [1, 2, 0, 3, 3, 0]},
+                    # extra element                      ^^^
+                )
             ),
             aprops,
             aprops,
@@ -105,9 +118,12 @@ def test_igraph():
     IGraph.Type.assert_equal(
         IGraph(g, node_ids=[1, 2, 0]),
         IGraph(
-            Graph(3, directed=True,
-                  edges=[(1, 1), (1, 2), (2, 2), (2, 0), (0, 2)], edge_attrs={"weight": [1, 2, 0, 3, 3]}
-                  )
+            Graph(
+                3,
+                directed=True,
+                edges=[(1, 1), (1, 2), (2, 2), (2, 0), (0, 2)],
+                edge_attrs={"weight": [1, 2, 0, 3, 3]},
+            )
         ),
         aprops,
         aprops,
