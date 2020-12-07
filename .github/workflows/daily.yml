@@ -3,15 +3,15 @@ name: Daily Checkup
 on:
   schedule:
     # * is a special character in YAML so you have to quote this string
-    # Run hourly at xx:35
-    - cron: '35 * * * *'
+    # Run daily at 10:35pm
+    - cron: '35 22 * * *'
 
 env:
   PYVER: 3.8
   CHANNELS: defaults -c metagraph/label/dev -c conda-forge
 
 jobs:
-  test_pyver:
+  daily_check:
     runs-on: ubuntu-latest
     steps:
       - name: Setup conda env
@@ -31,12 +31,8 @@ jobs:
           pytest --pyargs metagraph_igraph
           python -m metagraph.tests
           python -m metagraph.tests --dask
-          python -c 'import random; assert random.random() > 0.5'
       - name: Notify for Failure
         if: failure()
+        # TODO: replace this with Slack integration
         run: |
           echo "I failed!"
-      - name: Notify for Success
-        if: success()
-        run: |
-          echo "I succeeded!"
