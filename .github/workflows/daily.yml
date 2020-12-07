@@ -1,0 +1,42 @@
+name: Daily Checkup
+
+on:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # Run hourly at xx:35
+    - cron: '35 * * * *'
+
+env:
+  PYVER: 3.8
+  CHANNELS: defaults -c metagraph/label/dev -c conda-forge
+
+jobs:
+  test_pyver:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup conda env
+        run: |
+          source "$CONDA/etc/profile.d/conda.sh"
+          conda config --set always_yes yes --set changeps1 no
+          conda update -q conda
+          conda create -n mg python=${{ env.PYVER }} pytest coverage pytest-cov
+          conda activate mg
+          # Install package using latest "dev" versions from metagraph channel
+          conda install -c ${{ env.CHANNELS }} metagraph-igraph
+          conda list
+      - name: Pytest
+        run: |
+          source "$CONDA/etc/profile.d/conda.sh"
+          conda activate mg
+          pytest --pyargs metagraph_igraph
+          python -m metagraph.tests
+          python -m metagraph.tests --dask
+          python -c 'import random; assert random.random() > 0.5'
+      - name: Notify for Failure
+        if: failure()
+        run: |
+          echo "I failed!"
+      - name: Notify for Success
+        if: success()
+        run: |
+          echo "I succeeded!"
