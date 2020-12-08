@@ -1,10 +1,7 @@
 name: Daily Checkup
 
 on:
-  schedule:
-    # * is a special character in YAML so you have to quote this string
-    # Run daily at 3:35am UTC
-    - cron: '50 * * * *'
+  pull_request:
 
 env:
   PYVER: 3.8
@@ -31,6 +28,7 @@ jobs:
           pytest --pyargs metagraph_igraph
           python -m metagraph.tests
           python -m metagraph.tests --dask
+          python -c 'assert 1 != 1'
       - name: Notify for Failure
         if: failure()
         uses: 8398a7/action-slack@v3
