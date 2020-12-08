@@ -3,8 +3,8 @@ name: Daily Checkup
 on:
   schedule:
     # * is a special character in YAML so you have to quote this string
-    # Run daily at 10:35pm
-    - cron: '45 3 * * *'
+    # Run daily at 3:35am UTC
+    - cron: '50 * * * *'
 
 env:
   PYVER: 3.8
@@ -33,6 +33,12 @@ jobs:
           python -m metagraph.tests --dask
       - name: Notify for Failure
         if: failure()
-        # TODO: replace this with Slack integration
-        run: |
-          echo "I failed!"
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: "[Test]\nDaily health check *failed* for <https://github.com/metagraph-dev/metagraph-igraph/actions?query=workflow%3A%22Daily+Checkup%22|metagraph-igraph>"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
