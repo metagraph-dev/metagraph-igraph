@@ -4,7 +4,7 @@ on:
   schedule:
     # * is a special character in YAML so you have to quote this string
     # Run daily at 10:35pm
-    - cron: '35 22 * * *'
+    - cron: '45 3 * * *'
 
 env:
   PYVER: 3.8
