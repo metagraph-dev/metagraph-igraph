@@ -1,5 +1,5 @@
-from metagraph.wrappers import GraphWrapper
-from metagraph.types import Graph
+from metagraph.plugins.core.wrappers import GraphWrapper
+from metagraph.plugins.core.types import Graph
 from metagraph.core.dtypes import dtypes_simplified
 import igraph
 import math
