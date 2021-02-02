@@ -17,11 +17,16 @@ def igraph_pagerank(
     opts.tol = tolerance
     try:
         pr = graph.value.pagerank(
-            weights=weights, damping=damping, implementation="arpack", arpack_options=opts
+            weights=weights,
+            damping=damping,
+            implementation="arpack",
+            arpack_options=opts,
         )
     except igraph.InternalError as e:
         if "Maximum number of iterations reached" in str(e):
-            raise exceptions.ConvergenceError(f"failed to converge within {maxiter} iterations")
+            raise exceptions.ConvergenceError(
+                f"failed to converge within {maxiter} iterations"
+            )
         raise
     node_ids = None if graph.is_sequential() else graph.value.vs["NodeId"]
     return NumpyNodeMap(np.array(pr), node_ids)
