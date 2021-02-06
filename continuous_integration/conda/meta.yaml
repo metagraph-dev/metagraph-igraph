@@ -22,9 +22,7 @@ requirements:
 
 test:
   requires:
-    - pytest
-    - pytest-cov
-    - coverage
+    - metagraph-dev
 
   commands:
     - pytest --pyargs metagraph_igraph.tests

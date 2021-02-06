@@ -19,10 +19,10 @@ jobs:
           source "$CONDA/etc/profile.d/conda.sh"
           conda config --set always_yes yes --set changeps1 no
           conda update -q conda
-          conda create -n mg python=${{ env.PYVER }} pytest coverage pytest-cov
+          conda create -n mg python=${{ env.PYVER }}
           conda activate mg
           # Install package using latest "dev" versions from metagraph channel
-          conda install -c ${{ env.CHANNELS }} metagraph-igraph
+          conda install -c ${{ env.CHANNELS }} metagraph-igraph metagraph-dev
           conda list
       - name: Pytest
         run: |
