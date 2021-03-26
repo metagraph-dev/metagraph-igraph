@@ -7,12 +7,9 @@ channels:
 dependencies:
 # dev environment
   - python=3.8
-  - coverage
-  - pytest
-  - pytest-cov
+  - metagraph-dev
   - black
 
 # dependencies (so setup.py develop doesn't pip install them)
   - metagraph
-  - metagraph-dev
   - python-igraph
