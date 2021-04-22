@@ -18,11 +18,11 @@ requirements:
   run:
     - python
     - python-igraph >=0.8.3
-    - metagraph >=0.2.5
+    - metagraph >=0.2.6
 
 test:
   requires:
-    - metagraph-dev
+    - metagraph-dev >=0.2.6
 
   commands:
     - pytest --pyargs metagraph_igraph.tests
