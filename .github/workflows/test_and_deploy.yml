@@ -75,7 +75,7 @@ jobs:
         shell: bash -l {0}
     steps:
       - name: Download build artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4.1.7
         with:
           name: built_package
           path: ./artifact_storage
@@ -109,7 +109,7 @@ jobs:
       AC_LABEL: dev
     steps:
       - name: Download build artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4.1.7
         with:
           name: built_package
           path: ./artifact_storage
